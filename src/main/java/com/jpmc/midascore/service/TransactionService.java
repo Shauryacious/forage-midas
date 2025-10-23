@@ -36,6 +36,9 @@ public class TransactionService {
     @Autowired
     private TransactionRecordRepository transactionRecordRepository;
     
+    @Autowired
+    private IncentiveService incentiveService;
+    
     /**
      * Processes a transaction by validating it and updating the database.
      * 
@@ -81,8 +84,12 @@ public class TransactionService {
             // Step 4: All validations passed - process the transaction
             logger.info("Transaction validation passed. Processing...");
             
-            // Create and save the transaction record
-            TransactionRecord transactionRecord = new TransactionRecord(sender, recipient, transaction.getAmount());
+            // Step 5: Get incentive amount from the incentive API
+            float incentiveAmount = incentiveService.getIncentiveAmount(transaction);
+            logger.info("Received incentive amount: {} for transaction: {}", incentiveAmount, transaction);
+            
+            // Create and save the transaction record with incentive
+            TransactionRecord transactionRecord = new TransactionRecord(sender, recipient, transaction.getAmount(), incentiveAmount);
             transactionRecordRepository.save(transactionRecord);
             
             // Store original balances for logging
@@ -94,14 +101,14 @@ public class TransactionService {
             sender.setBalance(newSenderBalance);
             userRepository.save(sender);
             
-            // Update recipient balance (add amount)
-            float newRecipientBalance = recipient.getBalance() + transaction.getAmount();
+            // Update recipient balance (add amount + incentive)
+            float newRecipientBalance = recipient.getBalance() + transaction.getAmount() + incentiveAmount;
             recipient.setBalance(newRecipientBalance);
             userRepository.save(recipient);
             
-            logger.info("Transaction processed successfully. Sender {} balance: {} -> {}, Recipient {} balance: {} -> {}", 
+            logger.info("Transaction processed successfully. Sender {} balance: {} -> {}, Recipient {} balance: {} -> {} (incentive: {})", 
                        sender.getName(), originalSenderBalance, sender.getBalance(),
-                       recipient.getName(), originalRecipientBalance, recipient.getBalance());
+                       recipient.getName(), originalRecipientBalance, recipient.getBalance(), incentiveAmount);
             
             return true;
             

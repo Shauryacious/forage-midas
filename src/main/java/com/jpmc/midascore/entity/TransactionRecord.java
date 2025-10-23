@@ -78,6 +78,22 @@ public class TransactionRecord {
     private LocalDateTime processedAt;
     
     /**
+     * Incentive amount received for this transaction.
+     * 
+     * This field stores the incentive amount returned by the incentive API.
+     * The incentive is added to the recipient's balance but not deducted
+     * from the sender's balance. This allows tracking of incentive payments
+     * and provides an audit trail for incentive calculations.
+     * 
+     * Key Points:
+     * - Incentive amount is always >= 0
+     * - Stored alongside the transaction amount for complete record
+     * - Enables reporting and analysis of incentive payments
+     */
+    @Column(name = "incentive_amount", nullable = false)
+    private Float incentiveAmount;
+    
+    /**
      * Default constructor required by JPA.
      * JPA needs a no-args constructor to create entity instances.
      */
@@ -90,11 +106,13 @@ public class TransactionRecord {
      * @param sender The user who sent the transaction
      * @param recipient The user who received the transaction  
      * @param amount The transaction amount
+     * @param incentiveAmount The incentive amount received for this transaction
      */
-    public TransactionRecord(UserRecord sender, UserRecord recipient, Float amount) {
+    public TransactionRecord(UserRecord sender, UserRecord recipient, Float amount, Float incentiveAmount) {
         this.sender = sender;
         this.recipient = recipient;
         this.amount = amount;
+        this.incentiveAmount = incentiveAmount;
         this.processedAt = LocalDateTime.now();
     }
     
@@ -141,9 +159,17 @@ public class TransactionRecord {
         this.processedAt = processedAt;
     }
     
+    public Float getIncentiveAmount() {
+        return incentiveAmount;
+    }
+    
+    public void setIncentiveAmount(Float incentiveAmount) {
+        this.incentiveAmount = incentiveAmount;
+    }
+    
     @Override
     public String toString() {
-        return String.format("TransactionRecord{id=%d, sender=%s, recipient=%s, amount=%.2f, processedAt=%s}", 
-                           id, sender.getName(), recipient.getName(), amount, processedAt);
+        return String.format("TransactionRecord{id=%d, sender=%s, recipient=%s, amount=%.2f, incentive=%.2f, processedAt=%s}", 
+                           id, sender.getName(), recipient.getName(), amount, incentiveAmount, processedAt);
     }
 }
